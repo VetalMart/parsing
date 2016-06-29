@@ -4,7 +4,12 @@ from bs4 import BeautifulSoup
 import sys
 
 BASE_URL = 'http://ek.ua'
-INPUT_URL = sys.argv[1]
+INPUT_FILE = sys.argv[1]
+
+def get_url_from_file(f):
+    file_ = open(f, 'r').read().split()
+    a = [i for i in file_]
+    return a
 
 def get_html(url):
     response = urllib.request.urlopen(url)
@@ -39,28 +44,33 @@ def parse(html):
 def save(projects, path):
     with open(path, 'w') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(('Модель', 'Цена', 'Магазин'))
+        writer.writerow(('Модель', 'Магазин', 'Цена'))
 
         for project in projects:
             writer.writerow((project['title'], project['market'],
                              project['price']))
 
 def main():
-    url_pages = get_page_count(get_html(INPUT_URL))
-    page_count = len(url_pages)
-    print(url_pages, page_count)
+    list_input_url =[i for i in get_url_from_file(INPUT_FILE)]
+    #print(list_input_url)
+    list_with_fold_pages = []
+    for i in list_input_url:
+        list_with_fold_pages.extend(get_page_count(get_html(i)))
+
+    for i in list_with_fold_pages:
+        print(i)
+
+    page_count = len(list_with_fold_pages)
 
     projects = []
 
     for page in range(0, page_count):
         print('Парсинг %d%%' % ((page / page_count) * 100))
-        url = '{0}{1}'.format(BASE_URL, url_pages[page])
+        url = '{0}{1}'.format(BASE_URL, list_with_fold_pages[page])
         projects.extend(parse(get_html(url)))
-
-    for project in projects:
-        print(project)
 
     save(projects, 'projects.csv')
 
 if __name__ == '__main__':
     main()
+
