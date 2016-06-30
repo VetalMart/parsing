@@ -1,3 +1,4 @@
+from timer import Timer
 import csv
 import urllib.request
 from bs4 import BeautifulSoup
@@ -16,13 +17,16 @@ def get_html(url):
     return response.read()
 
 def get_page_count(html):
-    soup = BeautifulSoup(html, 'lxml')
-    paggination = soup.find('div', class_='ib page-num')
-    list_href = []
-    for i in  paggination.find_all('a', class_=['ib select', 'ib']):
-        list_href.append(i.attrs['href'])
-    #print(type(list_href), list_href)
-    return list_href
+    try:
+        soup = BeautifulSoup(html, 'lxml')
+        paggination = soup.find('div', class_='ib page-num')
+        list_href = []
+        for i in  paggination.find_all('a', class_=['ib select', 'ib']):
+            list_href.append(i.attrs['href'])
+        #print(type(list_href), list_href)
+        return list_href
+    except AttributeError:
+        return []
 
 def parse(html):
     soup = BeautifulSoup(html, 'lxml')
@@ -51,26 +55,34 @@ def save(projects, path):
                              project['price']))
 
 def main():
-    list_input_url =[i for i in get_url_from_file(INPUT_FILE)]
-    #print(list_input_url)
-    list_with_fold_pages = []
-    for i in list_input_url:
-        list_with_fold_pages.extend(get_page_count(get_html(i)))
-
-    for i in list_with_fold_pages:
-        print(i)
+    with Timer() as t:
+        list_input_url =[i for i in get_url_from_file(INPUT_FILE)]
+        #print(list_input_url)
+        list_with_fold_pages = []
+        for i in list_input_url:
+            list_with_fold_pages.extend(get_page_count(get_html(i)))
+    print('Блок формирования ссылок выполняется за {0} сек.'.format(t.secs))
+    #for i in list_with_fold_pages:
+     #   print(i)
 
     page_count = len(list_with_fold_pages)
 
     projects = []
 
-    for page in range(0, page_count):
-        print('Парсинг %d%%' % ((page / page_count) * 100))
-        url = '{0}{1}'.format(BASE_URL, list_with_fold_pages[page])
-        projects.extend(parse(get_html(url)))
+    with Timer() as t:
+        for page in range(0, page_count):
+            print('Парсинг %d%%' % ((page / page_count) * 100))
+            url = '{0}{1}'.format(BASE_URL, list_with_fold_pages[page])
+            projects.extend(parse(get_html(url)))
+    print('Блок парсинга выполняется за {0} сек.'.format(t.secs))
 
-    save(projects, 'projects.csv')
+
+    with Timer() as t:
+        save(projects, 'projects.csv')
+    print('Сохранение выполняется за {0} сек.'.format(t.secs))
 
 if __name__ == '__main__':
-    main()
+    with Timer() as t:
+        main()
+    print('Все выполняется за {0} сек.'.format(t.secs))
 
