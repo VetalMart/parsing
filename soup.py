@@ -1,22 +1,27 @@
+from concurrent.futures import ThreadPoolExecutor, Future
 from timer import Timer
 import csv
 import urllib.request
 from bs4 import BeautifulSoup
 import sys
+import eventlet
+from task_queue import task_queue
+#from eventlet.green import urllib
 
 BASE_URL = 'http://ek.ua'
 INPUT_FILE = sys.argv[1]
 
-def get_url_from_file(f):
+def get_url_from_file(f)->"gen":
     file_ = open(f, 'r').read().split()
-    a = [i for i in file_]
+    a = (i for i in file_)
     return a
 
-def get_html(url):
+def get_html(url)->'html':
+    #response = urllib.request.urlopen(url)
     response = urllib.request.urlopen(url)
     return response.read()
 
-def get_page_count(html):
+def get_page_count(html)->list:
     try:
         soup = BeautifulSoup(html, 'lxml')
         paggination = soup.find('div', class_='ib page-num')
@@ -28,7 +33,7 @@ def get_page_count(html):
     except AttributeError:
         return []
 
-def parse(html):
+def parse(html)->list:
     soup = BeautifulSoup(html, 'lxml')
     table = soup.find('table', class_="where-buy-table")
 
@@ -54,28 +59,43 @@ def save(projects, path):
             writer.writerow((project['title'], project['market'],
                              project['price']))
 
+def save_whole_links_to_txt(l):
+    f = open('save_full_list.txt', 'w')
+    for i in l:
+        f.write(BASE_URL+i+'\n')
+    f.close()
+def open_file(f)->list:
+    list_with_fold_pages = []
+    for i in get_url_from_file(f):
+        list_with_fold_pages.extend(get_page_count(get_html(i)))
+    return list_with_fold_pages
+
 def main():
     with Timer() as t:
-        list_input_url =[i for i in get_url_from_file(INPUT_FILE)]
-        #print(list_input_url)
-        list_with_fold_pages = []
-        for i in list_input_url:
-            list_with_fold_pages.extend(get_page_count(get_html(i)))
+        list_with_fold_pages = open_file(INPUT_FILE)
+        save_whole_links_to_txt(list_with_fold_pages)
     print('Блок формирования ссылок выполняется за {0} сек.'.format(t.secs))
-    #for i in list_with_fold_pages:
-     #   print(i)
 
     page_count = len(list_with_fold_pages)
 
     projects = []
-
+    urls = []
     with Timer() as t:
         for page in range(0, page_count):
-            print('Парсинг %d%%' % ((page / page_count) * 100))
-            url = '{0}{1}'.format(BASE_URL, list_with_fold_pages[page])
-            projects.extend(parse(get_html(url)))
-    print('Блок парсинга выполняется за {0} сек.'.format(t.secs))
+            urls.append('{0}{1}'.format(BASE_URL, list_with_fold_pages[page]))
+        """
+        a = 1
+        with ThreadPoolExecutor(200) as executor:
+            for html in executor.map(get_html, urls):
+                print('Парсинг %d%%' % ((a / page_count) * 100))
+                projects.extend(parse(html))
+                a += 1
+        """
+        htmls = [get_html(i) for i in urls]
+        print(len(htmls))
+        projects.extend(task_queue(parse, htmls.iterator() , concurrency=10))
 
+    print('Блок парсинга выполняется за {0} сек.'.format(t.secs))
 
     with Timer() as t:
         save(projects, 'projects.csv')
