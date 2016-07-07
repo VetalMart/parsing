@@ -5,7 +5,6 @@ import urllib.request
 from bs4 import BeautifulSoup
 import sys
 import random
-import time
 
 BASE_URL = 'http://ek.ua'
 INPUT_FILE = sys.argv[1]
@@ -13,7 +12,7 @@ LIST_PROXY = [['5.34.183.29', '8080', 'budim_oleg:fesupaly'], ['5.34.183.151', '
 AMOUNT_THREADS = 100
 AMOUNT_PROCESS = 5
 
-def get_url_from_file(f)->"gen":
+def get_url_from_file(f):
     """
     вытаскивает из файла все ссылки, и делает из них список
     """
@@ -22,29 +21,16 @@ def get_url_from_file(f)->"gen":
     return a
 
 
-def get_url_from_csv(f)->"gen":
-    """
-    вытаскивает из файла все ссылки, и делает из них список
-    """
-    a = []
-    with open(f) as csvfile:
-        links = csv.reader(csvfile)
-        #a = [link for link in links]
-        for link in links:
-            a.extend(link)
-    return a
-
-def get_html(url:'proxy')->'html':
+def get_html(url):
     """
     открывает ссылку и читает html файл
     меняет прокси, когда счетчик ссылок доходит к определенному значению
     """
-    proxy  = urllib.request.ProxyHandler(get_html.__annotations__['url'])
+    proxy  = urllib.request.ProxyHandler(glob)
     auth = urllib.request.HTTPBasicAuthHandler()
     opener = urllib.request.build_opener(proxy, auth, urllib.request.HTTPHandler)
     urllib.request.install_opener(opener)
-    #print(get_html.__annotations__['url'])
-    time.sleep(.5)
+
     try:
         response = opener.open(url)
         opener.open(url).close()
@@ -53,7 +39,7 @@ def get_html(url:'proxy')->'html':
     except (urllib.error.URLError, ConnectionResetError):
         return get_html(url)
 
-def get_page_count(html)->list:
+def get_page_count(html):
     """
     если на странице товара есть вложенные страници,
     эта функция возвращает ссылки на них
@@ -69,7 +55,7 @@ def get_page_count(html)->list:
     except AttributeError:
         return []
 
-def parse(html)->list:
+def parse(html):
     """
     создает объект для парсинга
     парсит страници товаров по необходимым тегам
@@ -135,7 +121,7 @@ def save_whole_links_to_txt(l):
         writer = csv.writer(tmp)
         for i in l:
             writer.writerow([BASE_URL+i])
-def open_file(f)->list:
+def open_file(f):
     """
     открывает ссылки на товар "где купить"
     возвращает готовые ссылки, которые можно преобразовывать в html
@@ -150,18 +136,22 @@ def open_file(f)->list:
     return list_with_fold_pages
 
 def main():
-    get_html.__annotations__['url'] = give_proxy(LIST_PROXY)
+    global glob
+    glob = give_proxy(LIST_PROXY)
     #print(get_html.__annotations__['url'])
     with Timer() as t:
-        #list_with_fold_pages = []
-        #with ProcessPoolExecutor(AMOUNT_PROCESS) as e:
-         #   for i in e.submit(open_file, INPUT_FILE).result():
-          #      list_with_fold_pages.append(i)
+        list_with_fold_pages = []
+        with ProcessPoolExecutor(AMOUNT_PROCESS) as e:
+            for i in e.submit(open_file, INPUT_FILE).result():
+                list_with_fold_pages.append(i)
+        # если с изначальных ссылок формирует базу
+        #list_with_fold_pages = open_file(INPUT_FILE)
 
-        list_with_fold_pages = get_url_from_csv(INPUT_FILE)
+        # если с сформированных ссылок просто парсит
+        #list_with_fold_pages = get_url_from_file(INPUT_FILE)
 
         # сохраняет все вложенные ссылки для дальнейшего использования
-        #save_whole_links_to_txt(list_with_fold_pages)
+        save_whole_links_to_txt(list_with_fold_pages)
     print('Блок формирования ссылок выполняется за {0} сек.'.format(t.secs))
 
 
@@ -176,21 +166,21 @@ def main():
 
         with ProcessPoolExecutor(AMOUNT_PROCESS) as executor:
             a, b = 1, 0
-            c = int((a / page_count) * 100)
+            c = (a / page_count) * 100
             # работа с начальными ссылками
-            #for html in executor.map(get_html, urls):
+            for html in executor.map(get_html, urls):
 
             # работа с сформированными ссылками
-            for html in executor.map(get_html, list_with_fold_pages):
+            #for html in executor.map(get_html, list_with_fold_pages):
+                #print(get_html.__annotations__['url'])
                 if b <= (int(page_count * 0.07 + 1)):
                     b += 1
                 else:
                     b = 0
-                    get_html.__annotations__['url'] = give_proxy(LIST_PROXY)
-                if  c != int((a / page_count) * 100):
-                    print('Парсинг %d%%' % (c))
-                    print(get_html.__annotations__['url'])
-                    c = int((a / page_count) * 100)
+                    glob = give_proxy(LIST_PROXY)
+                if  c != (a / page_count) * 100:
+                    print('Парсинг %d%%' % ((a / page_count) * 100))
+                    c = (a / page_count) * 100
                 projects.extend(parse(html))
                 a += 1
     print('Блок парсинга выполняется за {0} сек.'.format(t.secs))
