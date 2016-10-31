@@ -1,0 +1,7 @@
+for runing mysql server:
+
+sudo service mysql start 
+
+for running apache2 (phpmyadmin):
+
+sudo /etc/init.d/apache2 start

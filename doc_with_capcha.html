@@ -1,0 +1,54 @@
+<!DOCTYPE html><html lang="ru"><head>
+    <meta charset="utf-8">
+    <!-- scaling -->
+    <meta name="viewport" content="width=device-width; initial-scale=1.0;">
+    <title>Каталог товаров  Сравнение цен: отзывы, видео обзоры, характеристики | hotline.ua</title>
+    <script src="https://www.google.com/recaptcha/api.js"></script>
+    <script src="http://hotline.ua/js/jquery/jquery-1.11.3.min.js"></script>
+    <style>
+        body, html, p { margin: 0; padding: 0; }
+        .container { max-width: 960px; text-align: center; padding: 30px 0 0; margin: 0 auto }
+        .container > p { font: normal 18px/30px Arial,Geneva,Tahoma,sans-serif; padding: 0 0 20px; }
+        .container > p + p { color: #999 }
+        .g-recaptcha { display: inline-block; margin: 0 auto }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p>В связи с возросшей активностью нежелательных ботов на Hotline<br>с зарубежных IP-адресов, пожалуйста, подтвердите, что вы не являетесь таковым.</p>
+        <p>Due to the increased activity of the unwanted bots from foreign IP addresses<br>on Hotline, please confirm that you are not one of them.</p>
+        <div id="g-recaptcha" class="g-recaptcha" data-callback="validate" data-sitekey="6Le5KhATAAAAAJ6cdNsBMGTNY19mpZQbdMoNEHoW"></div>
+
+    <script>
+        var  validate = function(gResponse){
+            jQuery.ajax({
+                url: '/recaptcha/',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    response: gResponse
+                },
+                success: function(r){
+                    if (!!r.success) location.reload();
+                },
+                error: function(){
+                    grecaptcha.reset('g-recaptcha');
+                }
+            });
+        };
+        jQuery(document).ready(function(){
+            jQuery(document).on('change', 'textarea#g-recaptcha-response', function(){
+                var $this = jQuery(this);
+                if (!$this.val()) {
+                    return;
+                }
+                validate($this.val());
+            });
+        });
+    </script>
+    </div>
+
+
+
+
+</body></html>
