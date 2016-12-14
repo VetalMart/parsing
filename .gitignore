@@ -1,0 +1,6 @@
+__pycache__
+*.pyc
+*.log
+*.sublime-project
+*.sublime-workspace
+*.html

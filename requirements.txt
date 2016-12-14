@@ -1,0 +1,6 @@
+cssselect==1.0.0
+jedi==0.9.0
+lxml==3.6.4
+PyMySQL==0.7.9
+requests==2.11.1
+selenium==3.0.1
